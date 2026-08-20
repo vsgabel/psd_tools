@@ -1,5 +1,7 @@
 # psd-tools
 
+[![Tests](https://github.com/vsgabel/psd_tools/actions/workflows/tests.yml/badge.svg)](https://github.com/vsgabel/psd_tools/actions/workflows/tests.yml)
+
 Python utilities for computing power spectral densities (PSDs) of signals and
 fields sampled on regular grids, in 1D, 2D, and 3D. Built on `numpy.fft`,
 with optional Hanning windowing and variance-preserving normalization so
