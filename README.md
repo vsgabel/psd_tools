@@ -5,8 +5,13 @@
 Python utilities for computing power spectral densities (PSDs) of signals and
 fields sampled on regular grids, in 1D, 2D, and 3D. Built on `numpy.fft`,
 with optional Hanning windowing and variance-preserving normalization so
-that integrating the PSD recovers the (windowed) data variance, per
-Parseval's theorem.
+that integrating the PSD recovers the window-corrected variance, consistent
+with Parseval's theorem.
+
+These tools were developed for my own research and organized into a reusable
+package. Feel free to get in touch!
+
+This package is under active development.
 
 ## Installation
 
@@ -95,13 +100,5 @@ src/psd_tools/
 ## License
 
 MIT License. See [LICENSE](LICENSE).
-
-## Commercial use
-
-Commercial use is permitted under the MIT License.
-
-If you use psd_tools in a commercial product or service, I would appreciate
-hearing about how the software is being used. This is a request, not a
-condition of the license.
 
 🇮🇱 **Developed in Israel**
