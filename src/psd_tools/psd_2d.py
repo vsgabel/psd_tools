@@ -4,9 +4,9 @@ def psd2d(x, dy, dx, hanning=True, verbose=False, unit="units"):
     """Compute the 2D power spectral density (PSD) of a field on a regular grid.
 
     The mean is removed before transforming, an optional 2D Hanning window
-    is applied (with variance correction), and the result is normalized so
-    that summing the PSD over all wavenumbers recovers the (windowed) data
-    variance, per Parseval's theorem.
+    is applied (with window-power correction), and the result is normalized so
+    that integrating the PSD over all wavenumbers recovers the window-corrected
+    mean-square power, consistent with Parseval's theorem.
 
     Parameters
     ----------
@@ -15,22 +15,22 @@ def psd2d(x, dy, dx, hanning=True, verbose=False, unit="units"):
     dy, dx : float
         Grid spacing along the y (rows) and x (columns) axes.
     hanning : bool, optional
-        If True (default), apply a 2D Hanning window before the FFT to
-        reduce spectral leakage. If False, use a rectangular (all-ones)
+        If True (default), apply a separable 2D Hanning window before the FFT
+        to reduce spectral leakage. If False, use a rectangular (all-ones)
         window.
     verbose : bool, optional
-        If True, print the data variance, windowed data variance, PSD
-        variance, their ratios, and whether Parseval's theorem is
-        satisfied within a 5% relative tolerance.
+        If True, print the data variance, window-corrected mean-square power,
+        PSD-integrated variance, their ratios, and whether Parseval's theorem
+        is satisfied within a 5% relative tolerance.
     unit : str, optional
         Unit label used only in the verbose printout.
 
     Returns
     -------
     P : ndarray, shape (ny, nx)
-        2D power spectral density.
+        Two-sided 2D power spectral density.
     ky, kx : ndarray
-        Frequency (wavenumber) coordinates along y and x, as returned by
+        Wavenumber coordinates along y and x, as returned by
         ``np.fft.fftfreq``.
     dky, dkx : float
         Wavenumber bin spacing along y and x.
@@ -69,11 +69,13 @@ def psd2d(x, dy, dx, hanning=True, verbose=False, unit="units"):
     return P, ky, kx, dky, dkx
 
 def psd_kh(P, kx, ky, dkx, dky, verbose=False, unit="units"):
-    """Radially average a 2D PSD onto an isotropic horizontal wavenumber axis.
+    """Azimuthally integrate a 2D PSD onto an isotropic horizontal wavenumber axis.
 
     Bins the 2D power spectral density ``P`` by horizontal wavenumber
-    ``kh = sqrt(kx**2 + ky**2)`` using bins of width ``min(dkx, dky)``,
-    producing a 1D isotropic PSD.
+    ``kh = sqrt(kx**2 + ky**2)`` using annular bins of width
+    ``min(dkx, dky)``, producing a variance-preserving 1D isotropic PSD.
+    The spectrum is normalized such that integrating ``P_kh`` over ``kh``
+    recovers the variance contained in the 2D PSD.
 
     Parameters
     ----------
@@ -85,15 +87,15 @@ def psd_kh(P, kx, ky, dkx, dky, verbose=False, unit="units"):
         Wavenumber bin spacing along x and y.
     verbose : bool, optional
         If True, print the radially-integrated variance, the total PSD
-        variance, their ratio, and whether Parseval's theorem is
-        satisfied within a 5% relative tolerance.
+        variance, their ratio, and whether variance is conserved within
+        a 5% relative tolerance.
     unit : str, optional
         Unit label used only in the verbose printout.
 
     Returns
     -------
     P_kh : ndarray
-        1D radially-averaged power spectral density.
+        1D variance-preserving isotropic power spectral density.
     kh : ndarray
         Bin-center horizontal wavenumbers corresponding to ``P_kh``.
     dkh : float
