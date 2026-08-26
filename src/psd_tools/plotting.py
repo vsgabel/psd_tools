@@ -1,6 +1,6 @@
 import numpy as np
 
-def shift(P, kx, ky, log=True, thresh=1e-8):
+def shift(P, kx, ky, log=True, radial_weight=False,thresh=1e-8):
     """Center a 2D PSD in wavenumber space and scale it for plotting.
 
     Applies ``np.fft.fftshift`` to ``P``, ``kx``, and ``ky`` so that the
@@ -15,17 +15,19 @@ def shift(P, kx, ky, log=True, thresh=1e-8):
     kx, ky : ndarray
         Wavenumber coordinates along x and y matching the shape of ``P``.
     log : bool, optional
-        If True (default), return ``log10(P_prep + thresh)`` instead of
-        ``P_prep`` directly.
+        If True (default), return ``log10(P_shift + thresh)`` instead of
+        ``P_shift`` directly.
+    radial_weight : bool, optional
+        If True, scale the PSD by ``sqrt(kx**2 + ky**2)``.
     thresh : float, optional
         Small offset added before taking the log to avoid ``log10(0)``.
 
     Returns
     -------
-    P_prep : ndarray, shape (ny, nx)
+    P_shift : ndarray, shape (ny, nx)
         Shifted and scaled (optionally log10) PSD.
     ky_plot, kx_plot : ndarray
-        Shifted y and x wavenumber coordinates matching ``P_prep``.
+        Shifted y and x wavenumber coordinates matching ``P_shift``.
     """
 
     P_shift = np.fft.fftshift(P)
@@ -34,18 +36,19 @@ def shift(P, kx, ky, log=True, thresh=1e-8):
 
     KX, KY = np.meshgrid(kx_plot, ky_plot)
 
-    P_prep = P_shift*np.abs(KX)*np.abs(KY)
+    if radial_weight:
+        P_shift = P_shift * np.sqrt(KX**2 + KY**2)
     if log:
-        P_prep = np.log10(P_prep+thresh)
+        P_shift = np.log10(P_shift+thresh)
 
-    return P_prep, ky_plot, kx_plot
+    return P_shift, ky_plot, kx_plot
 
-def shift_positive(P, kx, ky, log=True, thresh=1e-8):
+def shift_positive(P, kx, ky, log=True, radial_weight=False, thresh=1e-8):
     """Restrict a 2D PSD to the positive-wavenumber quadrant and scale it.
 
     Similar to :func:`shift`, but instead of centering the full spectrum,
-    selects only the strictly positive ``kx`` and ``ky`` wavenumbers,
-    scales the corresponding PSD values by ``|kx|*|ky|``, and optionally
+    selects only the strictly positive ``kx`` and ``ky`` wavenumbers, optionally
+    scales the corresponding PSD values by ``sqrt(kx*2 + ky*2)`` and optionally
     takes ``log10``.
 
     Parameters
@@ -55,17 +58,19 @@ def shift_positive(P, kx, ky, log=True, thresh=1e-8):
     kx, ky : ndarray
         Wavenumber coordinates along x and y matching the shape of ``P``.
     log : bool, optional
-        If True (default), return ``log10(P_prep + thresh)`` instead of
-        ``P_prep`` directly.
+        If True (default), return ``log10(P_pos + thresh)`` instead of
+        ``P_pos`` directly.
+    radial_weight : bool, optional
+            If True, scale the PSD by ``sqrt(kx**2 + ky**2)``.
     thresh : float, optional
         Small offset added before taking the log to avoid ``log10(0)``.
 
     Returns
     -------
-    P_prep : ndarray
+    P_pos : ndarray
         Scaled (optionally log10) PSD restricted to positive ``kx``/``ky``.
     ky_pos, kx_pos : ndarray
-        Positive-only y and x wavenumber coordinates matching ``P_prep``.
+        Positive-only y and x wavenumber coordinates matching ``P_pos``.
     """
     mask_x = kx > 0
     mask_y = ky > 0
@@ -76,8 +81,10 @@ def shift_positive(P, kx, ky, log=True, thresh=1e-8):
     P_pos = P[np.ix_(mask_y, mask_x)]
     KX, KY = np.meshgrid(kx_pos, ky_pos)
 
-    P_prep = P_pos*np.abs(KX)*np.abs(KY)
+    if radial_weight:
+        KH = np.sqrt(KX**2 + KY**2)
+        P_pos = P_pos * KH
     if log:
-        P_prep = np.log10(P_prep+thresh)
+        P_pos = np.log10(P_pos+thresh)
 
-    return P_prep, ky_pos, kx_pos
+    return P_pos, ky_pos, kx_pos
