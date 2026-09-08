@@ -72,3 +72,60 @@ def psd3d(x, dt, dy, dx, hanning=True, verbose=False, unit="units"):
         print("\nParseval OK" if np.isclose(var_windowed, var_psd, rtol=0.05) else "\nParseval FAILED")
 
     return P, f, ky, kx, df, dky, dkx
+
+def psd_kh_f(P, kx, ky, dkx, dky, df, verbose=False, unit="units"):
+    """
+    Convert a 3D PSD P(f, ky, kx) into a 2D PSD P(f, kh) by azimuthally integrating the horizontal wavenumbers.
+
+    Parameters
+    ----------
+    P : ndarray
+        3D PSD with shape (nf, ny, nx).
+    kx, ky : ndarray
+        Horizontal wavenumber coordinates.
+    dkx, dky : float
+        Horizontal wavenumber spacings.
+    df : float
+        Frequency spacing.
+    verbose : bool
+        If True, check variance conservation.
+    unit : str
+        Unit label used in the variance check.
+
+    Returns
+    -------
+    P_kh_f : ndarray
+        PSD as a function of frequency and isotropic horizontal wavenumber.
+    kh : ndarray
+        Horizontal isotropic wavenumber bin centers.
+    dkh : float
+        Horizontal wavenumber bin spacing.
+    """
+
+    KX, KY = np.meshgrid(kx, ky)
+    KH = np.sqrt(KX**2 + KY**2)
+
+    dkh = min(abs(dkx), abs(dky))
+    kh_edges = np.arange(0, KH.max() + dkh, dkh)
+    kh = 0.5 * (kh_edges[:-1] + kh_edges[1:])
+
+    P_kh_f = np.zeros((P.shape[0], len(kh)))
+
+    for j in range(len(kh)):
+        mask = (KH >= kh_edges[j]) & (KH < kh_edges[j + 1])
+        P_kh_f[:, j] = np.sum(P[:, mask], axis=1) * abs(dkx * dky) / dkh
+
+    if verbose:
+        var_original = np.sum(P) * df * abs(dky * dkx)
+        var_radial = np.sum(P_kh_f) * df * dkh
+
+        print(f"Original PSD variance: {var_original:.6e} {unit}²")
+        print(f"Radial PSD variance:   {var_radial:.6e} {unit}²")
+        print(f"Original/Radial ratio: {var_original / var_radial:.6f}")
+
+        if np.isclose(var_original, var_radial, rtol=0.05):
+            print("Parseval OK")
+        else:
+            print("Parseval FAILED")
+
+    return P_kh_f, kh, dkh
